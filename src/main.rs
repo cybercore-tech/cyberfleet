@@ -19,14 +19,29 @@ enum ArgMode {
     Tui,
     Summary,
     List,
+    Open(String),
+    Fetch(String),
 }
 
 fn parse_args() -> std::result::Result<ArgMode, String> {
     let mut mode = ArgMode::Tui;
-    for arg in std::env::args().skip(1) {
+    let mut args = std::env::args().skip(1);
+    while let Some(arg) = args.next() {
         match arg.as_str() {
             "--summary" => mode = ArgMode::Summary,
             "--list" => mode = ArgMode::List,
+            "--open" => {
+                let path = args
+                    .next()
+                    .ok_or_else(|| "cyberfleet: --open needs a path".to_string())?;
+                mode = ArgMode::Open(path);
+            }
+            "--fetch" => {
+                let path = args
+                    .next()
+                    .ok_or_else(|| "cyberfleet: --fetch needs a path".to_string())?;
+                mode = ArgMode::Fetch(path);
+            }
             "-h" | "--help" => {
                 print_usage();
                 std::process::exit(0);
@@ -49,9 +64,11 @@ fn print_usage() {
          \x20   cyberfleet [OPTIONS]\n\
          \n\
          OPTIONS:\n\
-         \x20   --summary   Print a one-line JSON status (for the bar widget) and exit\n\
-         \x20   --list      Print a full JSON array of every repo's status and exit\n\
-         \x20   -h, --help  Print this help and exit\n\
+         \x20   --summary       Print a one-line JSON status (for the bar widget) and exit\n\
+         \x20   --list          Print a full JSON array of every repo's status and exit\n\
+         \x20   --open <path>   Open a terminal at <path> and exit (for a HUD/widget button)\n\
+         \x20   --fetch <path>  Open a terminal at <path> running `git fetch` and exit\n\
+         \x20   -h, --help      Print this help and exit\n\
          \n\
          Config: ~/.config/cyberfleet/config.json (roots to scan, ignore list, max depth)."
     );
@@ -94,6 +111,23 @@ fn print_list() -> Result<()> {
     Ok(())
 }
 
+/// `--open`/`--fetch` for a HUD/widget button — spawns a real terminal via
+/// the same `spawn_terminal_at` the TUI's own 'o'/'e' keys use, rather than
+/// running git non-interactively. `git fetch` specifically needs this: an
+/// SSH passphrase or host-key prompt has to land somewhere a human can
+/// answer it, exactly the reason the TUI itself suspends to a real
+/// terminal for fetch instead of capturing it (see `fetch_inherited`).
+fn open_terminal(path: &str) -> Result<()> {
+    git_ops::spawn_terminal_at(std::path::Path::new(path), None)
+}
+
+fn fetch_in_terminal(path: &str) -> Result<()> {
+    git_ops::spawn_terminal_at(
+        std::path::Path::new(path),
+        Some("git fetch; echo; echo 'fetch done — press enter to close'; read _"),
+    )
+}
+
 /// Fast, local-only pass for the bar widget: discover + status every repo,
 /// print one JSON line, exit. No network fetch — that stays an explicit TUI
 /// action so the bar never blocks on a slow or offline remote.
@@ -122,6 +156,8 @@ fn main() -> Result<()> {
     match mode {
         ArgMode::Summary => return print_summary(),
         ArgMode::List => return print_list(),
+        ArgMode::Open(path) => return open_terminal(&path),
+        ArgMode::Fetch(path) => return fetch_in_terminal(&path),
         ArgMode::Tui => {}
     }
 
