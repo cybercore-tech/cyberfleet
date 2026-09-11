@@ -15,11 +15,18 @@ use crossterm::{
 use ratatui::{Terminal, backend::CrosstermBackend};
 use std::io;
 
-fn parse_args() -> std::result::Result<bool, String> {
-    let mut summary = false;
+enum ArgMode {
+    Tui,
+    Summary,
+    List,
+}
+
+fn parse_args() -> std::result::Result<ArgMode, String> {
+    let mut mode = ArgMode::Tui;
     for arg in std::env::args().skip(1) {
         match arg.as_str() {
-            "--summary" => summary = true,
+            "--summary" => mode = ArgMode::Summary,
+            "--list" => mode = ArgMode::List,
             "-h" | "--help" => {
                 print_usage();
                 std::process::exit(0);
@@ -31,7 +38,7 @@ fn parse_args() -> std::result::Result<bool, String> {
             }
         }
     }
-    Ok(summary)
+    Ok(mode)
 }
 
 fn print_usage() {
@@ -43,10 +50,48 @@ fn print_usage() {
          \n\
          OPTIONS:\n\
          \x20   --summary   Print a one-line JSON status (for the bar widget) and exit\n\
+         \x20   --list      Print a full JSON array of every repo's status and exit\n\
          \x20   -h, --help  Print this help and exit\n\
          \n\
          Config: ~/.config/cyberfleet/config.json (roots to scan, ignore list, max depth)."
     );
+}
+
+/// The per-repo counterpart to `print_summary` — every field a HUD/widget
+/// would want to render a real per-repo row, not just the aggregate count.
+fn print_list() -> Result<()> {
+    let cfg = config::load_or_init()?;
+    let roots: Vec<_> = cfg.roots.iter().map(|r| config::expand_tilde(r)).collect();
+    let paths = scan::discover_repos(&roots, &cfg.ignore, cfg.max_depth);
+
+    let repos: Vec<serde_json::Value> = paths
+        .iter()
+        .filter_map(|p| status::repo_status(p).ok())
+        .map(|s| {
+            serde_json::json!({
+                "name": s.name,
+                "path": s.path.display().to_string(),
+                "branch": s.branch,
+                "detached": s.detached,
+                "has_upstream": s.has_upstream,
+                "ahead": s.ahead,
+                "behind": s.behind,
+                "staged": s.staged,
+                "unstaged": s.unstaged,
+                "untracked": s.untracked,
+                "conflicted": s.conflicted,
+                "stashes": s.stashes,
+                "state": s.state.label(),
+                "dirty": s.is_dirty(),
+                "needs_attention": s.needs_attention(),
+                "last_commit_summary": s.last_commit_summary,
+                "last_commit_author": s.last_commit_author,
+            })
+        })
+        .collect();
+
+    println!("{}", serde_json::to_string(&repos)?);
+    Ok(())
 }
 
 /// Fast, local-only pass for the bar widget: discover + status every repo,
@@ -67,15 +112,17 @@ fn print_summary() -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    let summary_mode = match parse_args() {
+    let mode = match parse_args() {
         Ok(v) => v,
         Err(msg) => {
             eprintln!("{msg}");
             std::process::exit(2);
         }
     };
-    if summary_mode {
-        return print_summary();
+    match mode {
+        ArgMode::Summary => return print_summary(),
+        ArgMode::List => return print_list(),
+        ArgMode::Tui => {}
     }
 
     enable_raw_mode()?;
