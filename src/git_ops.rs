@@ -65,10 +65,23 @@ pub fn spawn_terminal_at(path: &Path, run: Option<&str>) -> Result<()> {
             }
         }
         _ => {
+            // xdg-terminal-exec — the spec Omarchy/uwsm actually points
+            // $TERMINAL at by default, so this is the branch that really
+            // runs here, not just a generic fallback. Its working-directory
+            // flag is `--dir=`, not `--working-directory=`: per its spec, an
+            // unrecognized dashed option is *silently discarded* rather than
+            // an error, which is exactly how the wrong flag name quietly
+            // produced a terminal in the wrong directory instead of failing
+            // loudly. Manually passing `-e` is equally pointless here — the
+            // spec says any execution argument given on the command line
+            // gets stripped, since it inserts the correct one itself for
+            // whatever terminal it resolves to — so the command goes after
+            // a bare `--` instead.
             cmd.arg("xdg-terminal-exec")
-                .arg(format!("--working-directory={path_str}"));
+                .arg(format!("--dir={path_str}"))
+                .arg("--title=Cyberfleet");
             if let Some(r) = run {
-                cmd.args(["-e", "bash", "-lc", r]);
+                cmd.arg("--").arg("bash").arg("-lc").arg(r);
             }
         }
     }
