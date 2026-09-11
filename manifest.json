@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.darkstardevx.cyberfleet",
+  "name": "Cyberfleet",
+  "version": "0.1.0",
+  "author": "darkstardevx",
+  "license": "MIT",
+  "description": "Multi-repo git status dashboard for Omarchy — see every repo that needs attention (dirty, unpushed, mid-rebase) from the bar, drill into a full TUI to fetch, diff, and jump in.",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Cyberfleet",
+    "description": "Multi-repo git status at a glance",
+    "category": "Developer Tools",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

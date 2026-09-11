@@ -1,0 +1,58 @@
+name: release-binary
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch_dir: linux-x86_64
+          # Uncomment when aarch64 runners are available for this repo:
+          # - os: ubuntu-24.04-arm
+          #   arch_dir: linux-aarch64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build release
+        run: cargo build --release
+
+      - name: Stage asset
+        run: |
+          mkdir -p dist
+          strip -o "dist/cyberfleet-${{ matrix.arch_dir }}" target/release/cyberfleet \
+            || cp target/release/cyberfleet "dist/cyberfleet-${{ matrix.arch_dir }}"
+          chmod +x "dist/cyberfleet-${{ matrix.arch_dir }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cyberfleet-${{ matrix.arch_dir }}
+          path: dist/cyberfleet-${{ matrix.arch_dir }}
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/cyberfleet-*
+          generate_release_notes: true

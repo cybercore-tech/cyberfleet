@@ -1,0 +1,26 @@
+#!/bin/sh
+set -e
+
+# Local pre-commit hook to auto-format Rust code before committing.
+# Usage: make this file executable (chmod +x .githooks/pre-commit) and
+# set your repo to use the hooks directory:
+#   git config core.hooksPath .githooks
+# Then commits will automatically run cargo fmt and stage changes.
+
+echo "Running cargo fmt..."
+cargo fmt --all
+
+git add -A
+
+# Keep the dev-convenience ~/.local/bin/cyberfleet copy (installed via
+# install.sh --local-bin) in sync with what's actually being committed —
+# cyberplug learned this the hard way: a stale local-bin copy silently
+# ignored a brand new CLI flag because only bin/<arch>/ auto-rebuilds.
+# Only runs if that copy already exists — this never installs it for you.
+if [ -x "$HOME/.local/bin/cyberfleet" ]; then
+  echo "Refreshing ~/.local/bin/cyberfleet..."
+  ./install.sh --local-bin >/dev/null
+  echo "  -> ~/.local/bin/cyberfleet is up to date with this commit"
+fi
+
+exit 0
