@@ -14,7 +14,7 @@ manager binary.
 ## Install
 
 ```bash
-omarchy plugin add https://github.com/darkstardevx/cyberfleet.git --enable
+omarchy plugin add https://github.com/cybercore-tech/cyberfleet.git --enable
 ```
 
 Click the bar icon. That's it — first launch scans a shortlist of common dev
@@ -111,7 +111,7 @@ like running them yourself.
 ## Developer install (rebuild binary)
 
 ```bash
-git clone https://github.com/darkstardevx/cyberfleet.git
+git clone https://github.com/cybercore-tech/cyberfleet.git
 cd cyberfleet
 ./install.sh
 ```
