@@ -11,7 +11,7 @@ issue.
 
 ## Reporting a vulnerability
 
-Email **cybercore.sh+security@gmail.com**. Include:
+Email **[security@cybercoretech.net](mailto:security@cybercoretech.net)**. Include:
 
 - the affected file/commit and a minimal repro or PoC
 - what you'd expect to happen instead
