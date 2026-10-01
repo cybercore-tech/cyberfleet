@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en" data-theme="cyberfleet-armada">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Cyberfleet — every repo, one glance</title>
+  <meta name="description" content="Cyberfleet: a multi-repo git status dashboard for Omarchy. A bar widget counts repos needing attention; a TUI fetches, diffs and jumps in.">
+  <meta name="theme-color" content="#09080f">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='12' fill='%2339ff33'/%3E%3Ccircle cx='18' cy='22' r='9' fill='%23ff147f'/%3E%3Ccircle cx='84' cy='30' r='9' fill='%2300e5ff'/%3E%3Ccircle cx='70' cy='84' r='9' fill='%23ff9000'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    :root { --a1: var(--acid); --a2: var(--pink); --a3: var(--cyan); }
+    .fleet { position: relative; width: min(100%, 32rem); aspect-ratio: 1; margin-inline: auto; }
+    .fleet svg { width: 100%; height: 100%; overflow: visible; }
+    .orbit { transform-origin: 200px 200px; animation: orbit 60s linear infinite; }
+    .orbit.o2 { animation-duration: 90s; animation-direction: reverse; }
+    @keyframes orbit { to { transform: rotate(360deg); } }
+    .link { stroke-dasharray: 4 6; animation: flow 1.6s linear infinite; }
+    @keyframes flow { to { stroke-dashoffset: -20; } }
+    .alert { animation: alert 1.8s ease-in-out infinite; }
+    @keyframes alert { 50% { opacity: .35; } }
+    .bar { position: absolute; left: 50%; bottom: -1.2rem; transform: translateX(-50%); display: flex; gap: .7rem; align-items: center; padding: .5rem .9rem; background: color-mix(in srgb, var(--panel) 94%, transparent); border: 1px solid var(--line); font: .76rem/1 var(--mono); color: var(--muted); white-space: nowrap; }
+    .bar .badge { padding: .25rem .55rem; background: var(--a2); color: var(--bg); font-weight: 700; }
+    .keys { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .7rem; }
+    .key { display: flex; gap: .8rem; align-items: center; padding: .8rem 1rem; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 85%, transparent); color: var(--muted); font-size: .92rem; }
+    .key kbd { min-width: 2.1rem; padding: .3rem .45rem; text-align: center; border: 1px solid var(--a1); color: var(--a1); background: color-mix(in srgb, var(--bg) 70%, transparent); font-size: .8rem; }
+    .states { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.2rem; }
+    .state { padding: .45rem .75rem; border: 1px solid var(--line); font: .74rem/1 var(--mono); letter-spacing: .1em; }
+    @media (max-width: 960px) { .keys { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 620px) { .keys { grid-template-columns: 1fr; } }
+  </style>
+  <script>
+    window.SITE = {
+      defaultTheme: 'cyberfleet-armada',
+      mashups: [
+        { id: 'cyberfleet-armada', label: 'ARMADA', base: 'cyberpunk-nexus', accent: 'synthwave-arcade' },
+        { id: 'cyberfleet-dirty-tree', label: 'DIRTY TREE', base: 'catppuccin-mocha', accent: 'dystopian-neon-rot' },
+        { id: 'cyberfleet-rebase-storm', label: 'REBASE STORM', base: 'cyberdyne-neural', accent: 'neosynth-flare' }
+      ]
+    };
+  </script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="https://cybercore-tech.github.io/" data-brand-phase="0" aria-label="Cybercore Tech home"><span class="brand-emblem">CC</span><span class="brand-name">CYBERCORE <b>/</b> CYBERFLEET<small>OMARCHY INTEGRATIONS</small></span></a>
+    <nav class="main-nav" aria-label="Primary"><a href="#bar">BAR</a><a href="#tui">TUI</a><a href="#setup">SETUP</a><a href="#themes">THEMES</a></nav>
+    <div class="theme-picker"><span class="theme-label">THEME</span><button id="themeButton" class="theme-button" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="themeMenu">LOADING THEMES…</button><div id="themeMenu" class="theme-menu" role="listbox" aria-label="Theme" hidden></div></div>
+  </header>
+
+  <main>
+    <section class="wrap hero">
+      <div>
+        <p class="eyebrow">Multi-repo git status · Omarchy · Rust · libgit2</p>
+        <h1><span class="glitch" data-text="CYBER">CYBER</span><br><em>FLEET</em></h1>
+        <p class="tagline">Stop <code>cd</code>-ing into every repo to remember which ones you forgot about.</p>
+        <p class="lede">A bar widget counts the repos that need you — dirty, unpushed, behind, or stuck mid-rebase — from a fast, local-only scan. Click it for a full TUI to fetch, diff and jump straight in. Built for people who work out of a dozen repos at once.</p>
+        <div class="chips"><span class="chip"><b>◆</b> OMARCHY BAR WIDGET</span><span class="chip"><b>◆</b> LOCAL-ONLY SCAN</span><span class="chip"><b>◆</b> LIBGIT2</span><span class="chip"><b>◆</b> MIT</span></div>
+        <div class="cta"><a class="btn" href="https://github.com/cybercore-tech/cyberfleet">VIEW SOURCE ↗</a><a class="btn ghost" href="#setup">INSTALL</a></div>
+      </div>
+      <div class="fleet reveal" aria-hidden="true">
+        <svg viewBox="0 0 400 400">
+          <circle cx="200" cy="200" r="120" style="fill:none;stroke:var(--line)" stroke-dasharray="2 8"/>
+          <circle cx="200" cy="200" r="178" style="fill:none;stroke:var(--line)" stroke-dasharray="2 8"/>
+          <g class="orbit">
+            <line class="link" x1="200" y1="200" x2="200" y2="80" style="stroke:var(--a1)" stroke-width="1.5"/>
+            <line class="link" x1="200" y1="200" x2="304" y2="260" style="stroke:var(--a2)" stroke-width="1.5"/>
+            <line class="link" x1="200" y1="200" x2="96" y2="260" style="stroke:var(--a3)" stroke-width="1.5"/>
+            <circle cx="200" cy="80" r="12" style="fill:var(--panel);stroke:var(--a1)" stroke-width="2.5"/><text x="200" y="58" text-anchor="middle" style="fill:var(--a1)" font-family="Share Tech Mono, monospace" font-size="11">clean</text>
+            <circle class="alert" cx="304" cy="260" r="12" style="fill:var(--a2)"/><text x="304" y="290" text-anchor="middle" style="fill:var(--a2)" font-family="Share Tech Mono, monospace" font-size="11">dirty ✱3</text>
+            <circle cx="96" cy="260" r="12" style="fill:var(--panel);stroke:var(--a3)" stroke-width="2.5"/><text x="96" y="290" text-anchor="middle" style="fill:var(--a3)" font-family="Share Tech Mono, monospace" font-size="11">↑2 ahead</text>
+          </g>
+          <g class="orbit o2">
+            <line class="link" x1="200" y1="200" x2="378" y2="200" style="stroke:var(--orange)" stroke-width="1.2"/>
+            <line class="link" x1="200" y1="200" x2="74" y2="74" style="stroke:var(--purple)" stroke-width="1.2"/>
+            <line class="link" x1="200" y1="200" x2="130" y2="366" style="stroke:var(--a1)" stroke-width="1.2"/>
+            <circle class="alert" cx="378" cy="200" r="9" style="fill:var(--orange)"/><text x="378" y="182" text-anchor="middle" style="fill:var(--orange)" font-family="Share Tech Mono, monospace" font-size="10">↓5 behind</text>
+            <circle class="alert" cx="74" cy="74" r="9" style="fill:var(--purple)"/><text x="74" y="58" text-anchor="middle" style="fill:var(--purple)" font-family="Share Tech Mono, monospace" font-size="10">rebasing</text>
+            <circle cx="130" cy="366" r="9" style="fill:var(--panel);stroke:var(--a1)" stroke-width="2"/>
+          </g>
+          <circle cx="200" cy="200" r="34" style="fill:color-mix(in srgb, var(--a1) 18%, var(--panel));stroke:var(--a1)" stroke-width="2.5"/>
+          <text x="200" y="205" text-anchor="middle" style="fill:var(--white)" font-family="Orbitron, sans-serif" font-size="13" font-weight="700">~/</text>
+        </svg>
+        <div class="bar"><span>⎇</span><span class="badge" id="fleetCount">3</span><span>repos need attention</span></div>
+      </div>
+    </section>
+
+    <section class="wrap section" id="bar">
+      <div class="section-head reveal"><div><p class="eyebrow">01 / The bar</p><h2>One number.<br><em>Zero waiting.</em></h2></div><p>The widget refreshes every 60 seconds from a local-only scan — no network fetch runs automatically, so your bar never blocks on a slow or offline remote. First launch finds your dev folders on its own: <code>Devspace</code>, <code>projects</code>, <code>code</code>, <code>.sysops</code>, <code>repos</code> and more.</p></div>
+      <div class="grid g4">
+        <div class="card c-pink reveal"><span class="num">◆ DIRTY</span><h3>UNCOMMITTED</h3><p>Staged, unstaged and untracked counts, plus stashes.</p></div>
+        <div class="card c-cyan reveal"><span class="num">◆ AHEAD</span><h3>UNPUSHED</h3><p>Commits that only exist on this machine.</p></div>
+        <div class="card c-orange reveal"><span class="num">◆ BEHIND</span><h3>OUT OF DATE</h3><p>Remote has moved on since your last fetch.</p></div>
+        <div class="card c-purple reveal"><span class="num">◆ IN PROGRESS</span><h3>MID-OPERATION</h3><p>A merge, rebase or cherry-pick left half-done — the thing <code>git status</code> buries in prose.</p></div>
+      </div>
+    </section>
+
+    <section class="wrap section" id="tui">
+      <div class="section-head reveal"><div><p class="eyebrow">02 / The dashboard</p><h2>Fetch. Diff.<br><em>Jump in.</em></h2></div><p>Status comes straight from <code>git2</code> — no shelling out, fast across dozens of repos. The two things that need your real credentials and tools, <code>git fetch</code> and opening a terminal or editor, use your actual <code>git</code>, <code>$TERMINAL</code> and <code>$EDITOR</code>.</p></div>
+      <div class="keys">
+        <div class="key reveal"><kbd>j/k</kbd>move</div><div class="key reveal"><kbd>/</kbd>filter by name</div><div class="key reveal"><kbd>o</kbd>terminal at repo</div><div class="key reveal"><kbd>e</kbd>open $EDITOR</div>
+        <div class="key reveal"><kbd>f</kbd>fetch selected</div><div class="key reveal"><kbd>F</kbd>fetch every repo</div><div class="key reveal"><kbd>d</kbd>git status</div><div class="key reveal"><kbd>a</kbd>add a root</div>
+        <div class="key reveal"><kbd>i</kbd>ignore repo</div><div class="key reveal"><kbd>r</kbd>rescan roots</div><div class="key reveal"><kbd>?</kbd>help</div><div class="key reveal"><kbd>q</kbd>quit</div>
+      </div>
+    </section>
+
+    <section class="wrap section" id="setup">
+      <div class="section-head reveal"><div><p class="eyebrow">03 / Setup</p><h2>Muster<br><em>the fleet.</em></h2></div><p>One command installs the widget and the manager binary. A bundled <code>linux-x86_64</code> binary ships with the plugin; elsewhere it builds this same checkout with <code>cargo build --locked</code> — it never downloads and runs a prebuilt artifact from the network.</p></div>
+      <div class="grid g2">
+        <div class="reveal"><span class="label">INSTALL / REMOVE</span>
+<pre class="code" data-copy><code>omarchy plugin add https://github.com/cybercore-tech/cyberfleet.git --enable
+
+<span class="c"># remove</span>
+omarchy plugin remove io.github.darkstardevx.cyberfleet</code></pre></div>
+        <div class="reveal"><span class="label">~/.config/cyberfleet/config.json</span>
+<pre class="code" data-copy><code>{
+  <span class="k">"roots"</span>: [<span class="s">"~/Devspace"</span>, <span class="s">"~/.sysops"</span>],
+  <span class="k">"ignore"</span>: [<span class="s">"node_modules"</span>, <span class="s">"target"</span>, <span class="s">"vendor"</span>, <span class="s">".cache"</span>],
+  <span class="k">"max_depth"</span>: <span class="n">4</span>
+}</code></pre></div>
+      </div>
+    </section>
+
+    <section class="wrap section" id="themes">
+      <div class="section-head reveal"><div><p class="eyebrow">04 / Theme matrix</p><h2>Fly<br><em>your colors.</em></h2></div><p>Every Cybercore palette from the shared schema, grouped by family — plus Cyberfleet's own <b>signature mashups</b>. Your pick follows you across Cybercore sites.</p></div>
+      <div class="theme-strip reveal"><div><span class="label">NOW RUNNING · <span id="themeCount">…</span></span><div class="now" data-active-theme>…</div><div class="recipe" id="themeRecipe"></div></div><div></div><div id="swatches"></div></div>
+    </section>
+
+    <section class="wrap section" style="padding-top:0">
+      <div class="card c-acid related reveal"><div><span class="num">◆ SISTER WIDGET</span><h3>CYBERWATCH — YOUR SERVICES</h3><p>Same idea for systemd: a bar count of units needing attention, and a TUI to fix them.</p></div><a class="btn" href="https://cybercore-tech.github.io/cyberwatch/">CYBERWATCH ↗</a></div>
+    </section>
+  </main>
+
+  <footer><span>CYBERCORE TECH / CYBERFLEET / MIT / © <span id="year"></span></span><span><a href="https://cybercore-tech.github.io/">CYBERCORE-TECH.GITHUB.IO</a> · <a href="https://github.com/cybercore-tech/cyberfleet">SOURCE</a></span></footer>
+  <script>
+    (() => { const el = document.getElementById('fleetCount'); if (!el || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const seq = [3, 3, 4, 2, 0, 1, 3]; let i = 0; setInterval(() => { el.textContent = seq[i++ % seq.length]; }, 3000); })();
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>
