@@ -70,7 +70,7 @@ ensure_binary() {
 
   notify "No cyberfleet binary for $(arch_dir) and no cargo available to build one. \
 Install Rust (https://rustup.rs), or download a release asset from \
-https://github.com/darkstardevx/cyberfleet/releases and place it at: $CYBERFLEET_BIN"
+https://github.com/cybercore-tech/cyberfleet/releases and place it at: $CYBERFLEET_BIN"
   return 1
 }
 

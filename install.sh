@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Developer rebuild — Omarchy users should prefer:
-#   omarchy plugin add https://github.com/darkstardevx/cyberfleet.git --enable
+#   omarchy plugin add https://github.com/cybercore-tech/cyberfleet.git --enable
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -44,4 +44,4 @@ if [[ "${1:-}" == "--local-bin" ]]; then
 fi
 
 echo "Done. Omarchy install:"
-echo "  omarchy plugin add https://github.com/darkstardevx/cyberfleet.git --enable"
+echo "  omarchy plugin add https://github.com/cybercore-tech/cyberfleet.git --enable"
